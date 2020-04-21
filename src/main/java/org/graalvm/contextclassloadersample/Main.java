@@ -37,6 +37,12 @@ public class Main {
         if (!driver.isFile()) {
             throw new IOException("Driver not found");
         }
+        // Required because of the driver filtering done by the DriverManager.
+        // The driver manager loads drivers by the `java.util.ServiceLoader`
+        // which uses Thread's context class loader, but call to `getConnection`
+        // filters the loaded drivers to those whose implementation class can be loaded
+        // by the application (not context) class loader, see: http://hg.openjdk.java.net/jdk8/jdk8/jdk/file/tip/src/share/classes/java/sql/DriverManager.java#l547
+        // This is quite surprising behaviour which disallows isolation of JDBC driver from the application.
         ClassLoader loader = new FilterClassLoader(new URL[]{
             driver.toURI().toURL(),
             JDBCConnectionProvider.class.getProtectionDomain().getCodeSource().getLocation()
